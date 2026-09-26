@@ -1,6 +1,7 @@
 package org.example;
 
 import org.example.steps.step2.MetricsCollectorSharedMutexImpl;
+import org.example.steps.step3.MetricsCollectorThreadLocalImpl;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -15,6 +16,13 @@ public class StressTest {
     @Test
     public void step2() throws InterruptedException, ExecutionException {
         var collector = new MetricsCollectorSharedMutexImpl();
+        var values = LoadGenerator.loadGenerator();
+        run(collector, values, 4);
+    }
+
+    @Test
+    public void step3() throws InterruptedException, ExecutionException {
+        var collector = new MetricsCollectorThreadLocalImpl();
         var values = LoadGenerator.loadGenerator();
         run(collector, values, 4);
     }
