@@ -2,6 +2,7 @@ package org.example;
 
 import org.example.steps.step2.MetricsCollectorSharedMutexImpl;
 import org.example.steps.step3.MetricsCollectorThreadLocalImpl;
+import org.example.steps.step4.MetricsCollectorDoubleBufferImpl;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -27,7 +28,19 @@ public class StressTest {
         run(collector, values, 4);
     }
 
-    public static void run(MetricsCollector collector, long[] values, int threadCnt)
+    @Test
+    public void step4() throws InterruptedException, ExecutionException {
+        var collector = new MetricsCollectorDoubleBufferImpl();
+        var values = LoadGenerator.loadGenerator();
+        int brokenSnapshots = run(collector, values, 4);
+        assertEquals(0, brokenSnapshots, "Есть несогласованные снимки");
+
+        Snapshot snapshot = collector.snapshot();
+        assertEquals(snapshot.count(), Arrays.stream(snapshot.buckets()).sum(),
+                "Итоговая сумма корзин не совпадает с count");
+    }
+
+    public static int run(MetricsCollector collector, long[] values, int threadCnt)
             throws InterruptedException, ExecutionException {
         int snapshotCount = 10_000;
         int lessCount = 0;
@@ -77,6 +90,7 @@ public class StressTest {
         for (Future<Long> writer : writers) {
             totalCalls += writer.get();
         }
+        threads.shutdownNow();
         Snapshot finalSnapshot = collector.snapshot();
 
         System.out.printf("Сумма корзин < count: %d%n", lessCount);
@@ -86,7 +100,6 @@ public class StressTest {
 
         assertEquals(totalCalls, finalSnapshot.count(), "Неверное итоговое число записей");
 
-        stop.set(true);
-        threads.shutdownNow();
+        return lessCount + greaterCount;
     }
 }
