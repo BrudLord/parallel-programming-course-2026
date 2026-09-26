@@ -1,12 +1,31 @@
 package org.example;
 
 
-public class Main {
-    public static void main(String[] args) {
-        System.out.printf("Hello and welcome!");
+import org.example.steps.step0.MetricsCollectorStep0Impl;
+import org.example.steps.step1.MetricsCollectorStep1EmptyLockImpl;
+import org.example.steps.step1.MetricsCollectorStep1Impl;
 
-        for (int i = 1; i <= 5; i++) {
-            System.out.println("i = " + i);
-        }
+public class Main {
+
+    public static void step0() throws InterruptedException {
+        var load = LoadGenerator.loadGenerator();
+        var collector = new MetricsCollectorStep0Impl();
+        System.out.printf("%.1f", Speedtest.measurePoint(collector, load, 1) / 1_000_000);
+    }
+
+    public static void step1() throws InterruptedException {
+        var load = LoadGenerator.loadGenerator();
+        var collector = new MetricsCollectorStep1Impl();
+        System.out.printf("%.1f", Speedtest.measurePoint(collector, load, 8) / 1_000_000);
+    }
+
+    public static void step1EmptyLock() throws InterruptedException {
+        var load = LoadGenerator.loadGenerator();
+        var collector = new MetricsCollectorStep1EmptyLockImpl();
+        System.out.printf("%.1f", Speedtest.measurePoint(collector, load, 1) / 1_000_000);
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        step1();
     }
 }
