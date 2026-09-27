@@ -34,9 +34,8 @@ public class MetricsCollectorSharedMutexImpl implements MetricsCollector {
         }
         count.getAndIncrement();
         sum.addAndGet(value);
-        min.updateAndGet(min -> Math.min(min, value));
-        max.updateAndGet(max -> Math.max(max, value));
-
+        if (value < min.get()) min.updateAndGet(min -> Math.min(min, value));
+        if (value > max.get()) max.updateAndGet(max -> Math.max(max, value));
     }
 
     private long findPercentile(long[] newBuckets, long count, double percentile) {

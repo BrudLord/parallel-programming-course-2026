@@ -93,10 +93,13 @@ public class StressTest {
         threads.shutdownNow();
         Snapshot finalSnapshot = collector.snapshot();
 
+        System.out.printf(
+                "Доля битых снимков (sum != count): %.1f%%%n",
+                100.0 * (lessCount + greaterCount) / snapshotCount
+        );
         System.out.printf("Сумма корзин < count: %d%n", lessCount);
         System.out.printf("Сумма корзин > count: %d%n", greaterCount);
-        System.out.printf("Вызовов record: %d%n", totalCalls);
-        System.out.printf("Итоговый count: %d%n", finalSnapshot.count());
+        System.out.printf("Итоговый count − число вызовов (после join): %d%n", totalCalls - finalSnapshot.count());
 
         assertEquals(totalCalls, finalSnapshot.count(), "Неверное итоговое число записей");
 

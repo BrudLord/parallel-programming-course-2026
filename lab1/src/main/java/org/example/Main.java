@@ -31,13 +31,13 @@ public class Main {
     public static void step2() throws InterruptedException {
         var load = LoadGenerator.loadGenerator();
         var collector = new MetricsCollectorSharedMutexImpl();
-        System.out.printf("%.1f", Speedtest.measurePoint(collector, load, 8) / 1_000_000);
+        System.out.printf("%.1f", Speedtest.measurePoint(collector, load, 2) / 1_000_000);
     }
 
     public static void step3() throws InterruptedException {
         var load = LoadGenerator.loadGenerator();
         var collector = new MetricsCollectorThreadLocalImpl();
-        System.out.printf("%.1f", Speedtest.measurePoint(collector, load, 1) / 1_000_000);
+        System.out.printf("%.1f", Speedtest.measurePoint(collector, load, 8) / 1_000_000);
     }
 
     public static void step4() throws InterruptedException {
@@ -47,6 +47,6 @@ public class Main {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        step3();
+        step2();
     }
 }
