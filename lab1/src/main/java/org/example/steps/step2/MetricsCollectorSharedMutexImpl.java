@@ -28,9 +28,9 @@ public class MetricsCollectorSharedMutexImpl implements MetricsCollector {
 
     @Override
     public void record(long value) {
-        int bucket_idx = Math.toIntExact(Math.min(value / 4, 255));
-        synchronized (mutexes[bucket_idx % mutexes.length]) {
-            buckets[bucket_idx]++;
+        int bucketIdx = Math.toIntExact(Math.min(value / 4, 255));
+        synchronized (mutexes[bucketIdx % mutexes.length]) {
+            buckets[bucketIdx]++;
         }
         count.getAndIncrement();
         sum.addAndGet(value);
