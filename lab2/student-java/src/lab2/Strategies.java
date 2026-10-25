@@ -1,5 +1,6 @@
 package lab2;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -53,18 +54,59 @@ public final class Strategies {
     /** Stateless DFS по дереву выборов: каждый прогон с нуля, повторяет префикс прошлого и берёт следующий вариант.
      *  bound — максимум вытеснений (этап 5); для dfs runner передаёт Integer.MAX_VALUE. */
     public static final class Dfs implements Strategy {
-        public Dfs(int bound) { }
+        List<Node> options;
+        Integer idx;
+
+        public Dfs(int bound) {
+            options = new ArrayList<>();
+            idx = 0;
+        }
 
         /** Подготовиться к новому прогону (позиция в пути, счётчик вытеснений). */
-        public void beginRun() { }
+        public void beginRun() {
+            idx = 0;
+        }
 
         public int pick(List<Integer> enabled, int last) {
-            throw new UnsupportedOperationException("TODO этап 4: Dfs.pick");
+            if (idx >= options.size()) {
+                options.add(new Node(enabled));
+            }
+            var current = options.get(idx);
+            idx++;
+            return current.pick();
         }
 
         /** Выбрать следующий путь; false — дерево обойдено. */
         public boolean endRun() {
-            throw new UnsupportedOperationException("TODO этап 4: Dfs.endRun");
+            while (options.size() > idx) {
+                options.removeLast();
+            }
+            while (!options.isEmpty()) {
+                if (options.getLast().next()) {
+                    return true;
+                }
+                options.removeLast();
+            }
+            return false;
+        }
+
+        private static final class Node {
+            final List<Integer> options;
+            int idx;
+
+            Node(List<Integer> enabled) {
+                options = List.copyOf(enabled);
+                idx = 0;
+            }
+
+            public Integer pick() {
+                return options.get(idx);
+            }
+
+            public boolean next() {
+                idx++;
+                return idx < options.size();
+            }
         }
     }
 }
