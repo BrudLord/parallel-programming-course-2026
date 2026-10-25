@@ -54,26 +54,39 @@ public final class Strategies {
     /** Stateless DFS по дереву выборов: каждый прогон с нуля, повторяет префикс прошлого и берёт следующий вариант.
      *  bound — максимум вытеснений (этап 5); для dfs runner передаёт Integer.MAX_VALUE. */
     public static final class Dfs implements Strategy {
-        List<Node> options;
-        Integer idx;
+        private List<Node> options;
+        private Integer idx;
+        private Integer maxBound;
+        private Integer currentBound;
 
         public Dfs(int bound) {
             options = new ArrayList<>();
             idx = 0;
+            maxBound = bound;
         }
 
         /** Подготовиться к новому прогону (позиция в пути, счётчик вытеснений). */
         public void beginRun() {
             idx = 0;
+            currentBound = 0;
         }
 
         public int pick(List<Integer> enabled, int last) {
             if (idx >= options.size()) {
-                options.add(new Node(enabled));
+                List<Integer> allowed = new ArrayList<>();
+                for (int candidate : enabled) {
+                    if (!(last != -1 && candidate != last && enabled.contains(last)) || currentBound < maxBound) {
+                        allowed.add(candidate);
+                    }
+                }
+                options.add(new Node(allowed));
             }
-            var current = options.get(idx);
+            var next = options.get(idx).pick();
             idx++;
-            return current.pick();
+            if (last != -1 && last != next && enabled.contains(last)) {
+                currentBound++;
+            }
+            return next;
         }
 
         /** Выбрать следующий путь; false — дерево обойдено. */

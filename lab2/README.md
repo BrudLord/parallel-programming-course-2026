@@ -690,11 +690,38 @@ mode=volatile samples=2,000,000
 #### Этап 5: Bounded
 | Программа | K | Расписаний | Ошибок | Первая ошибочная трасса | На каком решении вытеснение (для минимального K; нумерация с 1, как в этапе 5) |
 |---|---|---|---|---|---|
-| `withdraw-v1` | 0 | | | | |
-| `withdraw-v1` | 1 | | | | |
-| `withdraw-v1` | 2 | | | | |
-| `transfer` | 0 | | | | |
-| `transfer` | 1 | | | | |
+| `withdraw-v1` | 0 | 2 | 0 | — | — |
+| `withdraw-v1` | 1 | 8 | 2 | `AABBBBAA` | 3 (когда от A перешли к B) |
+| `withdraw-v1` | 2 | 12 | 6 | `AABBAABB` | — |
+| `transfer` | 0 | 2 | 0 | — | — |
+| `transfer` | 1 | 8 | 2 | `AB` | 2 (когда от A перешли к B) |
+
+##### Минимальное K и места вытеснений
+Для обеих программ минимальное K = 1. В логах вытеснения отмечены комментариями.
+
+`withdraw-v1`, `AABBBBAA`:
+```text
+A  lock mu
+A  unlock mu
+A  window
+# Вот здесь планировщик решил передать выполнение B
+B  lock mu
+B  unlock mu
+B  window
+B  lock mu
+B  unlock mu
+A  lock mu
+A  unlock mu
+```
+
+`transfer`, `AB`:
+```text
+A  lock a
+A  window
+# Вот здесь планировщик решил передать выполнение B
+B  lock b
+B  window
+```
 
 ### 3. Результаты этапа 6 (Коллектор)
 
