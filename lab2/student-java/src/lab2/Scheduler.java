@@ -10,8 +10,9 @@ import java.util.function.BooleanSupplier;
  * Этап 2: обнаружение deadlock в главном цикле и корректное завершение застрявших потоков.
  * Внутреннее устройство (свои классы, семафоры, вспомогательные методы для Shared и SchedLock) придумываете сами. */
 public final class Scheduler {
-    private static final ThreadLocal<ThreadState> currentThread = new ThreadLocal<>();
+    public static final ThreadLocal<ThreadState> currentThread = new ThreadLocal<>();
     private final List<ThreadState> threads = new ArrayList<>();
+    private final List<SchedLock> locks = new ArrayList<>();
     private final StringBuilder trace = new StringBuilder();
     private final Semaphore schedulerWakeup = new Semaphore(0);
 
@@ -23,6 +24,10 @@ public final class Scheduler {
     String deadlock;
 
     public Scheduler() {
+    }
+
+    void registerLock(SchedLock lock) {
+        locks.add(lock);
     }
 
     /** Зарегистрировать поток. Потоки получают буквы A, B, C… в порядке вызова spawn. */
@@ -40,7 +45,11 @@ public final class Scheduler {
             for (ThreadState thread : threads) {
                 if (thread.state == State.FINISHED) continue;
                 allFinished = false;
-                if (thread.condition != null) {
+                if (thread.waitingLock != null) {
+                    thread.state = thread.waitingLock.owner == null
+                            ? State.WAITING_TURN
+                            : State.WAITING_LOCK;
+                } else if (thread.condition != null) {
                     thread.state = thread.condition.getAsBoolean()
                             ? State.WAITING_TURN
                             : State.WAITING_CONDITION;
@@ -50,6 +59,17 @@ public final class Scheduler {
                 }
             }
             if (allFinished) break;
+            if (enabled.isEmpty()) {
+                List<String> held = new ArrayList<>();
+                for (SchedLock lock : locks) {
+                    if (lock.owner != null) {
+                        held.add(lock.name + ":" + threads.get(lock.owner).getName());
+                    }
+                }
+                deadlock = "held={" + String.join(", ", held) + "}";
+                break;
+            }
+
             int next = strategy.pick(enabled, last);
             ThreadState selected = threads.get(next);
             trace.append(selected.getName());
@@ -109,7 +129,7 @@ public final class Scheduler {
         thread.needsPause = true;
     }
 
-    private static void pause() {
+    public static void pause() {
         ThreadState thread = currentThread.get();
         thread.scheduler.schedulerWakeup.release();
         thread.workerWakeup.acquireUninterruptibly();
@@ -165,7 +185,7 @@ public final class Scheduler {
         if (interrupted) Thread.currentThread().interrupt();
     }
 
-    private enum State {
+    public enum State {
         RUNNING,
         WAITING_TURN,
         WAITING_LOCK,
@@ -173,7 +193,7 @@ public final class Scheduler {
         FINISHED
     }
 
-    private static final class ThreadState {
+    public static final class ThreadState {
         final Scheduler scheduler;
         final Runnable body;
         Integer id;
@@ -181,6 +201,7 @@ public final class Scheduler {
         Thread thread;
         State state = State.WAITING_TURN;
         BooleanSupplier condition;
+        SchedLock waitingLock;
         boolean needsPause = true;
 
         ThreadState(Scheduler scheduler, Integer id, Runnable body) {
